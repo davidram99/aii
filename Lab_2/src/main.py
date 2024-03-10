@@ -104,7 +104,6 @@ def buscar_y_mostrar_estadisticas(numero):
         for partido in data:
             # Total de goles de la jornada
             goles = partido[3].split('-')
-            print(goles)
             goles_jornada += int(goles[0]) + int(goles[1])
             # Empates
             if int(goles[0]) == int(goles[1]):
@@ -121,6 +120,41 @@ def buscar_y_mostrar_estadisticas(numero):
         listbox.insert(END, f'VICTORIAS LOCALES: {victorias_local_jornada}')
         listbox.insert(END, f'VICTORIAS VISITANTES: {victorias_visitante_jornada}')
 
+    except Exception as e:
+        messagebox.showerror("Error", "Error al buscar en la base de datos")
+
+def buscar_goles_equipo(numero, local):
+    try:
+        # Conexión a la base de datos
+        conn = sqlite3.connect('resultados.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM jornadas WHERE numero = ? AND local = ?", (numero, local))
+        # Lo convertimos en una lista
+        data = cursor.fetchall()
+        data = [partido for partido in data]
+        url = data[0][4]
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        jugadores = soup.find_all('div', class_='scr-hdr__scorers')
+        goleadores = []
+        for jugador in jugadores:
+            cancheros = jugador.find_all('span')
+            for canchero in cancheros:
+                if not canchero.has_attr("class"):
+                    goleadores.append(canchero.text.strip())
+        # Creamos la ventana tipo listbox con scroll
+        ventana = Toplevel()
+        listbox = Listbox(ventana, width=50)
+        scrollbar = Scrollbar(ventana)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        listbox.pack(side=LEFT, fill=BOTH, expand=1)
+        scrollbar.config(command=listbox.yview)
+        listbox.config(yscrollcommand=scrollbar.set)
+        # Añadimos los goleadores
+        for goleador in goleadores:
+            listbox.insert(END, goleador)
+        # Cerramos la conexión
+        conn.close()
     except Exception as e:
         messagebox.showerror("Error", "Error al buscar en la base de datos")
 
@@ -169,10 +203,9 @@ def buscar_jornada(tipo_busqueda):
     jornadas = [jornada[0] for jornada in data]
     # Ordena la lista
     jornadas.sort()
-    # Creamos el entry de número de jornada que solo acepta números entre 1 y 38
-    entry = tk.Entry(ventana)
+    # Creamos el spinbox de número de jornada que solo acepta números entre 1 y 38
+    entry = tk.Spinbox(ventana, from_=jornadas[0], to=jornadas[-1])
     entry.pack()
-    entry.config(validate="key", validatecommand=(entry.register(lambda text: text.isdigit() and jornadas[0] <= int(text) <= jornadas[-1] or text == ""), "%P"))
     # Creamos el boton
     if tipo_busqueda == "resultados":
         boton = tk.Button(ventana, text="Buscar", command = lambda:buscar_y_mostrar_resultados(entry.get()))
@@ -183,41 +216,65 @@ def buscar_jornada(tipo_busqueda):
     conn.close()
 
 def buscar_goles():
-    equipos_local = []
-    def filtra_equipos_local(event, data):
-        # Obtenemos el valor seleccionado
-        nonlocal combo_jornada
-        nonlocal ventana
-        nonlocal equipos_local
-        jornada = combo_jornada.get()
-        # Añadimos una lista seleccionable con los equipos locales
-        equipos_local = list(set([partido[1] for partido in data if partido[0] == int(jornada)]))
-    # Conexión a la base de datos
+    def rellenar_combobox(numero_jornada):
+        # Conectamos a la base de datos
+        conn = sqlite3.connect('resultados.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT local FROM jornadas WHERE numero = ?", (numero_jornada,))
+        # Lo convertimos en una lista
+        data = cursor.fetchall()
+        # Rellenamos el combobox
+        select_local['values'] = [local[0] for local in data]
+        # Cerramos la conexión
+        conn.close()
+    def rellenar_visitante(numero_jornada, local):
+        # Conectamos a la base de datos
+        conn = sqlite3.connect('resultados.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT visitante FROM jornadas WHERE numero = ? AND local = ?", (numero_jornada, local))
+        # Lo convertimos en una lista
+        data = cursor.fetchall()
+        data = [visitante[0] for visitante in data]
+        # Rellenamos el entry
+        entry2['state'] = 'normal'
+        entry2.delete(0, END)
+        entry2.insert(0, data[0])
+        entry2['state'] = 'disabled'
+        # Cerramos la conexión
+        conn.close()
+    # Conectamos a la base de datos
     conn = sqlite3.connect('resultados.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM jornadas")
+    cursor.execute("SELECT DISTINCT numero FROM jornadas")
     # Lo convertimos en una lista
     data = cursor.fetchall()
-    # Sacamos una lista de las jornadas
-    jornadas = list(set([jornada[0] for jornada in data]))
     # Creamos la ventana
     ventana = Toplevel()
-    ventana.title("Buscar resultados")
+    ventana.title("Buscar Goles")
+    # Jornada será una lista con los números de las jornadas (el primer elemento de cada set de la lista data)
+    jornadas = [jornada[0] for jornada in data]
+    # Ordena la lista
+    jornadas.sort()
+    label = tk.Label(ventana, text="Seleccione jornada")
+    label.pack(side=LEFT)
+    # Creamos el spinbox de número de jornada que solo acepta números entre 1 y 38
+    entry = tk.Spinbox(ventana, from_=jornadas[0], to=jornadas[-1], command=lambda:rellenar_combobox(entry.get()), state="readonly")
+    entry.pack(side=LEFT)
     # Creamos el label
-    label = tk.Label(ventana, text="Seleccione la jornada")
-    label.pack()
-    # Añadimos una lista seleccionable con las jornadas
-    combo_jornada = ttk.Combobox(ventana, values=jornadas, state="readonly")
-    combo_jornada.pack()
-    combo_jornada.bind("<<ComboboxSelected>>", lambda event:filtra_equipos_local(event, data))
-    # Añadimos una lista seleccionable con los equipos locales
-    combo_local = ttk.Combobox(ventana, values=equipos_local, state="readonly")
-    combo_local.pack()
-    # combo.bind("<<ComboboxSelected>>", lambda event:filtra_equipos_local(event, data))
-
-
+    label = tk.Label(ventana, text="Seleccione equipo local")
+    label.pack(side=LEFT)
+    # Creamos el spinbox de equipo local
+    select_local = tk.Spinbox(ventana, values=[], state="readonly", command=lambda:rellenar_visitante(entry.get(), select_local.get()))
+    select_local.pack(side=LEFT)
+    # Creamos el label
+    label = tk.Label(ventana, text="Equipo visitante")
+    label.pack(side=LEFT)
+    # Creamos el entry disabled
+    entry2 = tk.Entry(ventana, state='disabled')
+    entry2.pack(side=LEFT)
     # Creamos el boton
-    # boton = tk.Button(ventana, text="Buscar", command = lambda:buscar_y_mostrar_resultados(entry.get()))
+    boton = tk.Button(ventana, text="Buscar goles", command = lambda:buscar_goles_equipo(entry.get(), select_local.get()))
+    boton.pack(side=LEFT)
     # Cerramos la conexión
     conn.close()
 
