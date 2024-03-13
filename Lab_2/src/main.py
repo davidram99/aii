@@ -126,7 +126,7 @@ def buscar_y_mostrar_estadisticas(numero):
 def buscar_goles_equipo(numero, local):
     try:
         # Conexión a la base de datos
-        conn = sqlite3.connect('resultados.db')
+        conn = sqlite3.connect('./Lab2_resultados.db')
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM jornadas WHERE numero = ? AND local = ?", (numero, local))
         # Lo convertimos en una lista
