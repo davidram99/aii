@@ -4,9 +4,9 @@ __pycache__/
 *$py.class
 
 # Whoosh files
-index
-./index
-index/
+# index
+# ./index
+# index/
 
 # C extensions
 *.so

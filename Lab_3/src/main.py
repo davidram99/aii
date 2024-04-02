@@ -22,7 +22,7 @@ def cargarJuegos():
   else:
     ix = open_dir("index")
   writer = ix.writer()
-  for i in range(1, 4):
+  for i in range(1, 5):
     url = f"https://zacatrus.es/juegos-de-mesa.html?p={i}"
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
@@ -36,7 +36,6 @@ def cargarJuegos():
         responseJuego = requests.get(enlace)
         soupJuego = BeautifulSoup(responseJuego.text, "html.parser")
         titulo = soupJuego.find("h1", class_="page-title").find("span", class_="base").text
-        print(titulo)
         precio = soupJuego.find("span", class_="price").text
         precio = float(precio.replace("€", "").replace(",", "."))
         contenedorDetalles = soupJuego.find("div", class_="product info detailed")
@@ -52,23 +51,24 @@ def cargarJuegos():
         if detailsTable is not None:
           contenedorTematica = detailsTable.find("div", class_="col", attrs={"data-th": "Temática"})
           if contenedorTematica is not None:
-            tematica = contenedorTematica.text
+            tematica = contenedorTematica.text.strip().lower()
+            tematica = tematica.replace(' ', '')
           else:
             tematica = ""
           contenedorComplejidad = detailsTable.find("div", class_="col", attrs={"data-th": "Complejidad"})
           if contenedorComplejidad is not None:
-            complejidad = contenedorComplejidad.text
+            complejidad = contenedorComplejidad.text.strip()
           else:
             complejidad = ""
           contenedorJugadores = detailsTable.find("div", class_="col", attrs={"data-th": "Núm. jugadores"})
           if contenedorJugadores is not None:
-            jugadores = contenedorJugadores.text
+            jugadores = contenedorJugadores.text.strip()
           else:
             jugadores = ""
 
           writer.add_document(titulo=titulo, precio=precio, tematica=tematica, complejidad=complejidad, jugadores=jugadores, detalles=detalles)
         else:
-          writer.add_document(titulo=titulo, precio=precio, detalles=detalles)
+          writer.add_document(titulo=titulo, precio=precio, tematica='', complejidad='', jugadores='', detalles=detalles)
       except Exception as e:
           print(e)
   writer.commit()
@@ -118,7 +118,7 @@ def buscarPorTematica(tematica):
   ix = open_dir("index")
   with ix.searcher() as searcher:
     query = QueryParser("tematica", ix.schema).parse(tematica)
-    results = searcher.search(query)
+    results = searcher.search(query, limit=None)
     if len(results) == 0:
       messagebox.showinfo("Información", "No se han encontrado juegos con esa temática")
     else:
@@ -139,18 +139,14 @@ def buscaTematicas():
   ix = open_dir("index")
   # Buscamos y almacenamos todas las temáticas de los juegos
   with ix.searcher() as searcher:
-    query = QueryParser("tematica", ix.schema).parse("*")
-    results = searcher.search(query)
-    tematicas = set()
-    for r in results:
-      tematicas.add(r['tematica'])
+    tematicas = [i.decode('utf-8') for i in searcher.lexicon('tematica')]
   # Creamos una ventana con un spinbox para seleccionar la temática
   ventana = Toplevel()
   ventana.title("Buscar por temática")
   ventana.geometry("300x100")
   label = Label(ventana, text="Selecciona una temática")
   label.pack()
-  spinbox = Spinbox(ventana, values=list(tematicas))
+  spinbox = Spinbox(ventana, values=tematicas)
   spinbox.pack()
   boton = Button(ventana, text="Buscar", command=lambda: buscarPorTematica(spinbox.get()))
   boton.pack()
@@ -160,7 +156,7 @@ def buscarPrecioInferior(precio):
   ix = open_dir("index")
   with ix.searcher() as searcher:
     query = QueryParser("precio", ix.schema).parse(f"[0 TO {precio}]")
-    results = searcher.search(query)
+    results = searcher.search(query, limit=None)
     if len(results) == 0:
       messagebox.showinfo("Información", "No se han encontrado juegos con ese precio")
     else:
@@ -172,7 +168,6 @@ def buscarPrecioInferior(precio):
       listbox = Listbox(ventana, yscrollcommand=scrollbar.set)
       listbox.config(width=500, height=300)
       for r in results:
-        print(r)
         listbox.insert(END, f"{r['titulo']} - {r['precio']} - {r['tematica']} - {r['complejidad']} - {r['jugadores']}")
       listbox.pack(side=LEFT, fill=BOTH)
       scrollbar.config(command=listbox.yview)
@@ -187,6 +182,41 @@ def buscaPrecio():
   entry = Entry(ventana)
   entry.pack()
   boton = Button(ventana, text="Buscar", command=lambda: buscarPrecioInferior(entry.get()))
+  boton.pack()
+
+def buscarPorJudadores(jugadores):
+  ix = open_dir("index")
+  with ix.searcher() as searcher:
+    if int(jugadores) < 9:
+      query = QueryParser("jugadores", ix.schema).parse(jugadores)
+    else :
+      query = QueryParser("jugadores", ix.schema).parse('+8')
+    results = searcher.search(query, limit=None)
+    if len(results) == 0:
+      messagebox.showinfo("Información", "No se han encontrado juegos con ese número de jugadores")
+    else:
+      ventana = Toplevel()
+      ventana.title("Resultados")
+      ventana.geometry("500x300")
+      scrollbar = Scrollbar(ventana)
+      scrollbar.pack(side=RIGHT, fill=Y)
+      listbox = Listbox(ventana, yscrollcommand=scrollbar.set)
+      listbox.config(width=500, height=300)
+      for r in results:
+        listbox.insert(END, f"{r['titulo']} - {r['precio']} - {r['tematica']} - {r['complejidad']} - {r['jugadores']}")
+      listbox.pack(side=LEFT, fill=BOTH)
+      scrollbar.config(command=listbox.yview)
+  ix.close()
+
+def buscarJugadores():
+  ventana = Toplevel()
+  ventana.title("Buscar por jugadores")
+  ventana.geometry("300x100")
+  label = Label(ventana, text="Introduce número de jugadores")
+  label.pack()
+  entry = Entry(ventana)
+  entry.pack()
+  boton = Button(ventana, text="Buscar", command=lambda: buscarPorJudadores(entry.get()))
   boton.pack()
 
 def ventanaPrincipal():
@@ -205,7 +235,7 @@ def ventanaPrincipal():
   buscar.add_command(label="Detalles", command=buscaDetalles)
   buscar.add_command(label="Temática", command=buscaTematicas)
   buscar.add_command(label="Precio", command=buscaPrecio)
-  buscar.add_command(label="Jugadores")
+  buscar.add_command(label="Jugadores", command=buscarJugadores)
 
   root.mainloop()
 
