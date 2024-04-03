@@ -9,6 +9,10 @@ from whoosh.fields import Schema, TEXT, KEYWORD, NUMERIC, ID
 from whoosh.qparser import QueryParser, MultifieldParser
 from whoosh import qparser, query
 
+if (not os.environ.get('PYTHONHTTPSVERIFY', '') and
+getattr(ssl, '_create_unverified_context', None)):
+    ssl._create_default_https_context = ssl._create_unverified_context
+
 def crearIndice():
   if not os.path.exists("index"):
     os.mkdir("index")
