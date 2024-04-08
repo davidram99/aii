@@ -22,7 +22,7 @@ def crearIndice():
                   paises=KEYWORD(stored=True,commas=True,lowercase=True),
                   generos=KEYWORD(stored=True,commas=True,lowercase=True),
                   directores=KEYWORD(stored=True,commas=True,lowercase=True),
-                  sinopsis=TEXT,
+                  sinopsis=TEXT(stored=True,phrase=False),
                   url_detalles=ID(stored=True))
   ix = create_in("index", schema)
   return ix
@@ -83,7 +83,7 @@ def buscarPorTituloSinopsis(busqueda):
       listbox = Listbox(ventana, yscrollcommand=scrollbar.set)
       listbox.config(width=500, height=300)
       for estreno in results:
-        listbox.insert(END, f"{estreno['titulo']} - {estreno['titulo_original']} - {estreno['directores']}")
+        listbox.insert(END, f"{estreno['titulo']} - {estreno['titulo_original']} - {estreno['directores']} - {estreno['fecha_estreno']}")
       listbox.pack(side=LEFT, fill=BOTH)
       scrollbar.config(command=listbox.yview)
   
@@ -135,6 +135,92 @@ def buscaGeneros():
   boton = Button(ventana, text="Buscar", command=lambda: buscarPorGeneros(entry.get()))
   boton.pack()  
 
+def buscarPorFechas(busqueda):
+  fecha1 = int(busqueda[:8])
+  fecha2 = int(busqueda[9:])
+  print(fecha1, type(fecha1), fecha2, type(fecha2))
+  ix = open_dir("index")
+  with ix.searcher() as searcher:
+    rango_fechas = '[{} TO {}]'.format(fecha1, fecha2)
+    query = QueryParser("fecha_estreno", ix.schema).parse(rango_fechas)
+    results = searcher.search(query, limit=None)
+    if len(results) == 0:
+      messagebox.showinfo("Información", "No se han encontrado resultados")
+    else:
+      # Listbox con scrollbar
+      ventana = Toplevel()
+      ventana.title("Resultados de la búsqueda")
+      ventana.geometry("800x600")
+      scrollbar = Scrollbar(ventana)
+      scrollbar.pack(side=RIGHT, fill=Y)
+      listbox = Listbox(ventana, yscrollcommand=scrollbar.set)
+      listbox.config(width=500, height=300)
+      for estreno in results:
+        listbox.insert(END, f"{estreno['titulo']} - {estreno['titulo_original']} - {estreno['fecha_estreno']}")
+      listbox.pack(side=LEFT, fill=BOTH)
+      scrollbar.config(command=listbox.yview)
+      
+def buscaFechas():
+  ventana = Toplevel()
+  ventana.title("Buscar por fechas")
+  ventana.geometry("300x100")
+  label = Label(ventana, text="Introduce fecha de estreno")
+  label.pack()
+  entry = Entry(ventana)
+  entry.pack()
+  boton = Button(ventana, text="Buscar", command=lambda: buscarPorFechas(entry.get()))
+  boton.pack()
+
+def modificarFechaEstreno(titulo, fecha):
+  # Queremos modificar la fecha_estreno de cualquier estreno que contenga el título
+  ix = open_dir("index")
+  with ix.searcher() as searcher:
+    query = QueryParser("titulo", ix.schema).parse(titulo)
+    results = searcher.search(query, limit=None)
+    if len(results) == 0:
+      messagebox.showinfo("Información", "No se han encontrado resultados")
+    else:
+      ventana = Toplevel()
+      ventana.title("Resultados de la búsqueda")
+      ventana.geometry("800x600")
+      scrollbar = Scrollbar(ventana)
+      scrollbar.pack(side=RIGHT, fill=Y)
+      listbox = Listbox(ventana, yscrollcommand=scrollbar.set)
+      listbox.config(width=500, height=300)
+      for estreno in results:
+        listbox.insert(END, f"{estreno['titulo']} - {estreno['titulo_original']} - {estreno['fecha_estreno']}")
+      
+  respuesta = messagebox.askyesno("Información", "¿Desea modificar la fecha de estreno?")
+  if respuesta:
+    writer = ix.writer()
+    for estreno in results:
+      writer.update_document(titulo=estreno['titulo'],
+                             titulo_original=estreno['titulo_original'],
+                             fecha_estreno=int(fecha),
+                             paises=estreno['paises'],
+                             generos=estreno['generos'],
+                             directores=estreno['directores'],
+                             sinopsis=estreno['sinopsis'],
+                             url_detalles=estreno['url_detalles'])
+    writer.commit()
+    messagebox.showinfo("Información", "Fecha de estreno modificada correctamente")
+
+def modificarFecha():
+  # Ahora queremos dos entrys, uno para titulo y otro para la nueva fecha
+  ventana = Toplevel()
+  ventana.title("Modificar fecha de estreno")
+  ventana.geometry("300x150")
+  label = Label(ventana, text="Introduce título")
+  label.pack()
+  entry = Entry(ventana)
+  entry.pack()
+  label2 = Label(ventana, text="Introduce nueva fecha de estreno")
+  label2.pack()
+  entry2 = Entry(ventana)
+  entry2.pack()
+  boton = Button(ventana, text="Modificar", command=lambda: modificarFechaEstreno(entry.get(), entry2.get()))
+  boton.pack()
+
 def ventanaPrincipal():
   root = Tk()
   root.title("Buscador de estrenos")
@@ -150,6 +236,8 @@ def ventanaPrincipal():
   menu.add_cascade(label="Buscar", menu=buscar)
   buscar.add_command(label="Título o Sinópsis", command=buscaTituloSinopsis)
   buscar.add_command(label="Géneros", command=buscaGeneros)
+  buscar.add_command(label="Fecha", command=buscaFechas)
+  buscar.add_command(label="Modifica Fecha", command=modificarFecha)
 
   root.mainloop()
 
