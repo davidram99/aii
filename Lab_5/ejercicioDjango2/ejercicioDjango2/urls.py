@@ -1,5 +1,5 @@
 """
-URL configuration for ejercicioDjango2 project.
+URL configuration for EjercicioDjango2 project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
@@ -16,7 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from principal import views
 
 urlpatterns = [
+    path('', views.index),
+    path('cargarBD/', views.cargarBD),
+    # path('vinosAgrupadosPorDenominacion/', views.vinosAgrupadosPorDenominacion),
+    # path('vinosPorAnyo/', views.vinosPorAnyo),
+    # path('buscarVinosPorUva/', views.buscarVinosPorUva),
     path('admin/', admin.site.urls),
 ]
