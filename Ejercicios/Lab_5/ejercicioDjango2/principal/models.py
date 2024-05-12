@@ -1,41 +1,49 @@
 #encoding:utf-8
+
 from django.db import models
 
-# Create your models here.
-# Construir el modelo de datos en Django que almacene la información siguiente: 
-# a) Vino: IdVino, Nombre, Precio, DenominacionOrigen, TiposUvas. 
-# b) DenominacionOrigen: IdDenominacion, Nombre, Pais. 
-# c) Pais: IdPais, Nombre. 
-# d) TipoUva: IdUva, Nombre 
 
 class Pais(models.Model):
-    IdPais = models.AutoField(primary_key=True)
-    Nombre = models.CharField(max_length=50)
+    idPais = models.AutoField(primary_key=True)
+    nombre = models.TextField(verbose_name='Pais', unique=True)
 
     def __str__(self):
-        return self.Nombre
+        return self.nombre
     
-class DenominacionOrigen(models.Model):
-    IdDenominacion = models.AutoField(primary_key=True)
-    Nombre = models.CharField(max_length=50)
-    Pais = models.ForeignKey(Pais, on_delete=models.CASCADE)
+    class Meta:
+        ordering = ('nombre', )
+        
+class Denominacion(models.Model):
+    idDenominacion = models.IntegerField(primary_key=True)
+    nombre = models.TextField(verbose_name='Denominacion')
+    pais = models.ForeignKey(Pais, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.Nombre
+        return self.nombre
     
-class TipoUva(models.Model):
-    IdUva = models.AutoField(primary_key=True)
-    Nombre = models.CharField(max_length=50)
+    class Meta:
+        ordering = ('nombre', )
+
+class Uva(models.Model):
+    idUva = models.IntegerField(primary_key=True)
+    nombre = models.TextField()
 
     def __str__(self):
-        return self.Nombre
+        return self.nombre
     
+    class Meta:
+        ordering =('nombre', )
+                
 class Vino(models.Model):
-    IdVino = models.AutoField(primary_key=True)
-    Nombre = models.CharField(max_length=50)
-    Precio = models.DecimalField(max_digits=5, decimal_places=2)
-    DenominacionOrigen = models.ForeignKey(DenominacionOrigen, on_delete=models.CASCADE)
-    TiposUvas = models.ManyToManyField(TipoUva)
+    idVino = models.IntegerField(primary_key=True)
+    nombre = models.TextField()
+    precio = models.FloatField()
+    denominacion = models.ForeignKey(Denominacion, on_delete=models.SET_NULL, null=True)
+    uvas = models.ManyToManyField(Uva)
 
     def __str__(self):
-        return self.Nombre
+        return self.nombre
+    
+    class Meta:
+        ordering = ('nombre', )
+

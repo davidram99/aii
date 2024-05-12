@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 
+<head>
+  <meta charset='utf-8'>
+</head>
+
 <body>
   <ul style="list-style-type:none; display: flex; justify-content: flex-start; align-items: center; gap: 20px;">
     <li><a href="/">Principal</a></li>
     <li><a href="/cargarBD">Cargar BD</a></li>
+    <li><a href="/vinosAgrupadosPorDenominacion">Denominacion de Vinos</a></li>
+    <li><a href="/vinosPorAnyo">Vinos por Año</a></li>
+    <li><a href="/buscarVinosPorUva">Vinos por Uva</a></li>
   </ul>
+  <h1>{% block titulo %} {% endblock %}</h1>
+
+  {% block contenido %} {% endblock %}
 </body>
 
 </html>

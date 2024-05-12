@@ -1,0 +1,33 @@
+Instalar Django
+pip install Django
+
+Crear el proyecto Django
+django-admin startproject "nombre_del_proyecto"
+
+Crear la aplicación (¡Hacerlo desde la carpeta donde se encuentre el archivo manage.py!)
+python manage.py startapp principal
+
+Comando para levantar la aplicación Django (¡Hacerlo desde la carpeta donde se encuentre el archivo manage.py!)
+python manage.py runserver
+
+Para elegir el puerto de despliegue
+python manage.py runserver "XXXX"
+
+Añadir a settings.py
+# Identificando la ruta del proyecto
+import os
+RUTA_PROYECTO = os.path.dirname(os.path.realpath(__file__))
+
+Crear migraciones y migrar
+python manage.py makemigrations
+python manage.py migrate
+
+FLUJO DE LA APLICACIÓN
+Crear el proyecto - Crear la app - Crear los modelos en models.py - Registrar los modelos en admin.py - Migrar modelos
+
+ARCHIVOS A MODIFICAR
+- urls.py
+- admin.py
+- populateDB (crear)
+- views.py
+- settings.py (En INSTALLED_APPS meter la aplicación que hemos creado, en el caso de ejemplo añadimos 'principal')

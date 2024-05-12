@@ -21,8 +21,8 @@ from principal import views
 urlpatterns = [
     path('', views.index),
     path('cargarBD/', views.cargarBD),
-    # path('vinosAgrupadosPorDenominacion/', views.vinosAgrupadosPorDenominacion),
-    # path('vinosPorAnyo/', views.vinosPorAnyo),
-    # path('buscarVinosPorUva/', views.buscarVinosPorUva),
+    path('vinosAgrupadosPorDenominacion/', views.vinosAgrupadosPorDenominacion),
+    path('vinosPorAnyo/', views.buscar_vinos_por_anyo),
+    path('buscarVinosPorUva/', views.buscar_vinos_por_uva),
     path('admin/', admin.site.urls),
 ]

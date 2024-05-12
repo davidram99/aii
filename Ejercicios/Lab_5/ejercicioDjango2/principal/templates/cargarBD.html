@@ -1,15 +1,9 @@
 {% extends 'menu.html' %}
-<!DOCTYPE html>
-<html lang="es">
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cargar BD</title>
-</head>
+{% block titulo %}
+<h1> Fin de carga </h1>
+{% endblock %}
 
-<body>
-    {% block content %}
-    <h3>{{info}}</h3>
-    {% endblock %}
-</body>
+{% block contenido %}
+<h3>{{info}}</h3>
+{% endblock %}
